@@ -10,11 +10,19 @@
         integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
 </head>
 
+<style>
+    .card{
+        width: 300px;
+        margin: 5px;
+    }
+</style>
+
 <body>
     <div class="container mt-5">
         <a href="/movies/new" class="btn btn-success">Create a new movie</a>
+        <br>
         <% for( movie of movies) {%>
-            <div class="card d-block">
+            <div class="card d-inline-block">
                 <img class="card-img-top" src=<%= movie.img %> alt="Image Not found">
                 <div class="card-body">
                     <h5 class="card-title"><%= movie.name %></h5>
