@@ -11,11 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ejs-mate": "^3.0.0",
+    "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "method-override": "^3.0.0",
     "mongoose": "^6.0.5",
-    "node": "^16.9.1",
-    "path": "^0.12.7"
+    "node": "^16.9.1"
   }
 }

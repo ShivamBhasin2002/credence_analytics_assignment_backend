@@ -1,12 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const ejsMate = require('ejs-mate');
-const path = require('path');
 const methodOverride = require('method-override');
 const Schema = mongoose.Schema;
 const app = express();
+require("dotenv").config();
 
-mongoose.connect('mongodb://localhost:27017/movies', {
+mongoose.connect(process.env.DATABASENAME, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 });
@@ -25,14 +24,11 @@ const movieSchema = new Schema({
 
 const Movie = mongoose.model('movie',movieSchema);
 
-app.engine('ejs', ejsMate);
-app.set("view engine", "ejs");
-app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-app.get('/',(req,res)=>{
-    res.render('index.ejs');
+//Seed data into database route
+app.get('/seed',(req,res)=>{
     let seedData = [
         {
             name: "Harry Potter and the Order of the Phoenix",
@@ -51,17 +47,19 @@ app.get('/',(req,res)=>{
         }
     ];
     Movie.insertMany(seedData);
+    res.send('Data has been seeded');
 });
 
 //Show all
 app.get('/movies/',async (req,res)=>{
     const movies = await Movie.find({});
-    res.render('movies/index',{movies: movies});
+    res.send(movies);
 });
 
-//New Form
-app.get('/movies/new', (req,res)=>{
-    res.render('movies/new');
+//Show Movie
+app.get('/movies/:id',async (req,res)=>{
+    const movie = await Movie.findById(req.params.id);
+    res.send(movie);
 });
 
 //Creat Movie
@@ -69,18 +67,6 @@ app.post('/movies/',(req,res)=>{
     const movie = new Movie(req.body.movie);
     movie.save();
     res.redirect(`/movies/${movie._id}`);
-});
-
-//Edit Movie Form
-app.get('/movies/:id/edit', async (req,res)=>{
-    const movie = await Movie.findById(req.params.id);
-    res.render('movies/edit', {movie: movie});
-});
-
-//Show Movie
-app.get('/movies/:id',async (req,res)=>{
-    const movie = await Movie.findById(req.params.id);
-    res.render('movies/show', {movie: movie});
 });
 
 //Edit Movie
@@ -92,10 +78,13 @@ app.put('/movies/:id', async (req,res)=>{
 //Delete Movie
 app.delete('/movies/:id',async (req,res)=>{
     await Movie.findByIdAndDelete(req.params.id);
-    res.redirect('/movies');
+    res.send('Movie Deleted');
 });
 
+app.get('*', (req,res)=>{
+    res.send('INVALID ROUTE TRY AGAIN');
+});
 
-app.listen(process.env.port || 3000, ()=>{
+app.listen(process.env.port, ()=>{
     console.log("SERVER STARTED");
 })
