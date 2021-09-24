@@ -1,5 +1,6 @@
 const express = require('express');
 const methodOverride = require('method-override');
+const winston = require('winston');
 const app = express();
 require('dotenv').config();
 
@@ -8,25 +9,26 @@ const { Movie, movieSchema } = require('./movieSchema');
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
-class ExpressError extends Error {
-	constructor(message, statusCode) {
-		super();
-		this.message = message;
-		this.statusCode = statusCode;
-	}
-}
+const logConfiguration = {
+	transports: [new winston.transports.Console()],
+};
+const logger = winston.createLogger(logConfiguration);
 
 const validateMovie = (req, res, next) => {
 	const { error } = movieSchema.validate(req.body);
 	if (error) {
 		const msg = error.details.map((el) => el.message).join(', ');
-		throw new ExpressError(msg, 400);
+		logger.log({ message: msg, level: 'info' });
+		res.send(msg);
 	} else next();
 };
 
 const catchAsync = (func) => {
 	return (req, res, next) => {
-		func(req, res, next).catch(next);
+		func(req, res, next).catch((e) => {
+			logger.log({ message: e.message, level: 'error' });
+			res.send(e.message);
+		});
 	};
 };
 
@@ -70,7 +72,12 @@ app.get(
 	'/movies/:id',
 	catchAsync(async (req, res, next) => {
 		const movie = await Movie.findById(req.params.id);
-		res.send(movie);
+		if (movie === null) {
+			logger.log({ message: 'Movie not found', level: 'info' });
+			res.send('Movie not found');
+		} else {
+			res.send(movie);
+		}
 	})
 );
 
@@ -99,8 +106,13 @@ app.put(
 app.delete(
 	'/movies/:id',
 	catchAsync(async (req, res, next) => {
-		await Movie.findByIdAndDelete(req.params.id);
-		res.send('Movie Deleted');
+		if ((await Movie.findById(req.params.id)) === null) {
+			logger.log({ level: 'info', message: 'Movie not found' });
+			res.send('Movie not found');
+		} else {
+			await Movie.findByIdAndDelete(req.params.id);
+			res.send('Movie Deleted');
+		}
 	})
 );
 
